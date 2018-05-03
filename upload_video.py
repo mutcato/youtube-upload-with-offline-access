@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# source1: https://github.com/youtube/api-samples/blob/master/python/upload_video.py
+# source2: https://developers.google.com/api-client-library/python/guide/aaa_oauth
 
 import argparse
 import http.client
@@ -57,36 +59,40 @@ API_VERSION = 'v3'
 
 VALID_PRIVACY_STATUSES = ('public', 'private', 'unlisted')
 
-def get_code(authorize_url):
-    
-    """Show authorization URL and return the code the user wrote."""
-    message = "Check this link in your browser: {0}".format(authorize_url)
-    sys.stderr.write(message + "\n")
-    try: input = raw_input #For Python2 compatability
-    except NameError: 
-        #For Python3 on Windows compatability
-        try: from builtins import input as input 
-        except ImportError: pass
-    return input("Enter verification code: ")
+def get_code(authorize_url):   
+  """Show authorization URL and return the code the user wrote."""
+  message = "Check this link in your browser: {0}".format(authorize_url)
+  sys.stderr.write(message + "\n")
+  try: input = raw_input #For Python2 compatability
+  except NameError: 
+      #For Python3 on Windows compatability
+      try: from builtins import input as input 
+      except ImportError: pass
+  return input("Enter verification code: ")
 
 # Authorize the request and store authorization credentials.
 def get_authenticated_service():
-  #Builds a flow object which enables walk inside api. requires client id and client secret.
+  #2. Builds a flow object which enables walk inside api. requires client id and client secret.
   get_flow = oauth2client.client.flow_from_clientsecrets
   flow = get_flow(CLIENT_SECRETS_FILE, scope=SCOPES)
 
-  #Storage object stores and reuses user credentials
+  #3. Storage object stores and reuses user credentials
   #Requires file path of credentials.json
+  #Gets the credentials.json file. If it is first time of the user, storage object creates a empty credentials.json  
   storage = oauth2client.file.Storage('credentials.json')
+  #4. Reads the credentials.json file. If it is empty, user falls into the else condition. If it is not empty, user falls into the if condition
   existing_credential = storage.get()
   if existing_credential and not existing_credential.invalid:
     credential = existing_credential
   else:
     flow.redirect_uri = oauth2client.client.OOB_CALLBACK_URN
     authorize_url = flow.step1_get_authorize_url()
+    #5. get_code function returns the verification code which you copied from clicked url and entered in console
     code = get_code(authorize_url)
     if code:
+      #6. Gets the credentials
       credential = flow.step2_exchange(code, http=None)
+      #7. Writes the credentials data into empty or invalid credentials.json file
       storage.put(credential)
       credential.set_store(storage)
 
@@ -187,6 +193,7 @@ def uploadvideo(file, title, description, category, keywords, privacy_status):
 	default=privacy_status, help='Video privacy status.')
 	args = parser.parse_args()
 
+  # 1. Firstly this function runs. Whether the user accesses to the app first time or not this function runs all the time.
 	youtube = get_authenticated_service()
 	try:
 		initialize_upload(youtube, args)
